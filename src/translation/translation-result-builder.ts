@@ -152,6 +152,7 @@ export class TranslationResultBuilder {
     const phrases: Phrase[] = [];
     let trgPhraseStartIndex = 0;
     for (const phraseInfo of this.phrases) {
+      let confidence = Number.MAX_VALUE;
       for (let j = trgPhraseStartIndex; j < phraseInfo.targetCut; j++) {
         for (let i = phraseInfo.sourceSegmentRange.start; i < phraseInfo.sourceSegmentRange.end; i++) {
           const aligned = phraseInfo.alignment.get(i - phraseInfo.sourceSegmentRange.start, j - trgPhraseStartIndex);
@@ -161,9 +162,10 @@ export class TranslationResultBuilder {
         }
 
         sources[j] = this.sources[j];
+        confidence = Math.min(confidence, this.confidences[j]);
       }
 
-      phrases.push(new Phrase(phraseInfo.sourceSegmentRange, phraseInfo.targetCut));
+      phrases.push(new Phrase(phraseInfo.sourceSegmentRange, phraseInfo.targetCut, confidence));
       trgPhraseStartIndex = phraseInfo.targetCut;
     }
 

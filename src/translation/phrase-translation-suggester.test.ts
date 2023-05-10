@@ -4,6 +4,7 @@ import { PhraseTranslationSuggester } from './phrase-translation-suggester';
 import { TranslationResultBuilder } from './translation-result-builder';
 import { TranslationSources } from './translation-sources';
 import { WordAlignmentMatrix } from './word-alignment-matrix';
+import { LegacyPhraseTranslationSuggester } from './legacy-phrase-translation-suggester';
 
 describe('PhraseTranslationSuggester', () => {
   it('ends at punctuation', () => {
@@ -426,5 +427,153 @@ describe('PhraseTranslationSuggester', () => {
     const suggester = new PhraseTranslationSuggester(0.2);
     const suggestions = suggester.getSuggestions(2, 0, true, results);
     expect(suggestions.length).toEqual(0);
+  });
+
+  it('Scripture Forge Bug', () => {
+    const results: TranslationResult[] = [];
+    const builder = new TranslationResultBuilder(['target', ':', 'chapter', '1', ',', 'verse', '5', '.']);
+    builder.appendToken('target', TranslationSources.Smt | TranslationSources.Prefix, 0.5);
+    builder.markPhrase(
+      createRange(0, 1),
+      new WordAlignmentMatrix(2, 2, [
+        [0, 0],
+        [1, 1],
+      ])
+    );
+    builder.appendToken(':', TranslationSources.Smt | TranslationSources.Prefix, 0.5);
+    builder.markPhrase(
+      createRange(1, 2),
+      new WordAlignmentMatrix(2, 2, [
+        [0, 0],
+        [1, 1],
+      ])
+    );
+    builder.appendToken('chapter', TranslationSources.Smt | TranslationSources.Prefix, 0.5);
+    builder.markPhrase(
+      createRange(2, 3),
+      new WordAlignmentMatrix(2, 2, [
+        [0, 0],
+        [1, 1],
+      ])
+    );
+    builder.appendToken('1', TranslationSources.Smt | TranslationSources.Prefix, 0.5);
+    builder.markPhrase(
+      createRange(3, 4),
+      new WordAlignmentMatrix(2, 2, [
+        [0, 0],
+        [1, 1],
+      ])
+    );
+    builder.appendToken(',', TranslationSources.Smt | TranslationSources.Prefix, 0.5);
+    builder.markPhrase(
+      createRange(4, 5),
+      new WordAlignmentMatrix(2, 2, [
+        [0, 0],
+        [1, 1],
+      ])
+    );
+    builder.appendToken('versa', TranslationSources.Smt | TranslationSources.Prefix, 0.4);
+    builder.markPhrase(
+      createRange(5, 6),
+      new WordAlignmentMatrix(2, 2, [
+        [0, 0],
+        [1, 1],
+      ])
+    );
+    builder.appendToken('5', TranslationSources.Smt | TranslationSources.Prefix, 0.5);
+    builder.markPhrase(
+      createRange(6, 7),
+      new WordAlignmentMatrix(2, 2, [
+        [0, 0],
+        [1, 1],
+      ])
+    );
+    builder.appendToken('.', TranslationSources.Smt, 0.5);
+    builder.markPhrase(
+      createRange(7, 8),
+      new WordAlignmentMatrix(2, 2, [
+        [0, 0],
+        [1, 1],
+      ])
+    );
+    results.push(builder.toResult());
+
+    builder.reset();
+
+    builder.appendToken('target', TranslationSources.Smt | TranslationSources.Prefix, 0.5);
+    builder.markPhrase(
+      createRange(0, 1),
+      new WordAlignmentMatrix(2, 2, [
+        [0, 0],
+        [1, 1],
+      ])
+    );
+    builder.appendToken(':', TranslationSources.Smt | TranslationSources.Prefix, 0.5);
+    builder.markPhrase(
+      createRange(1, 2),
+      new WordAlignmentMatrix(2, 2, [
+        [0, 0],
+        [1, 1],
+      ])
+    );
+    builder.appendToken('chapter', TranslationSources.Smt | TranslationSources.Prefix, 0.5);
+    builder.markPhrase(
+      createRange(2, 3),
+      new WordAlignmentMatrix(2, 2, [
+        [0, 0],
+        [1, 1],
+      ])
+    );
+    builder.appendToken('1', TranslationSources.Smt | TranslationSources.Prefix, 0.5);
+    builder.markPhrase(
+      createRange(3, 4),
+      new WordAlignmentMatrix(2, 2, [
+        [0, 0],
+        [1, 1],
+      ])
+    );
+    builder.appendToken(',', TranslationSources.Smt | TranslationSources.Prefix, 0.5);
+    builder.markPhrase(
+      createRange(4, 5),
+      new WordAlignmentMatrix(2, 2, [
+        [0, 0],
+        [1, 1],
+      ])
+    );
+    builder.appendToken('versa', TranslationSources.Smt | TranslationSources.Prefix, 0.4);
+    builder.markPhrase(
+      createRange(5, 6),
+      new WordAlignmentMatrix(2, 2, [
+        [0, 0],
+        [1, 1],
+      ])
+    );
+    builder.appendToken('5', TranslationSources.Prefix, -1);
+    builder.appendToken('5', TranslationSources.Smt, 0.5);
+    builder.markPhrase(
+      createRange(6, 7),
+      new WordAlignmentMatrix(2, 2, [
+        [0, 1],
+        [0, 1],
+      ])
+    );
+    builder.appendToken('.', TranslationSources.Smt, 0.5);
+    builder.markPhrase(
+      createRange(7, 8),
+      new WordAlignmentMatrix(2, 2, [
+        [0, 0],
+        [1, 1],
+      ])
+    );
+    results.push(builder.toResult());
+
+    const legacySuggester = new LegacyPhraseTranslationSuggester();
+    legacySuggester.confidenceThreshold = 0.2;
+    const legacySuggestions = legacySuggester.getSuggestions(1, 7, true, results);
+    expect(legacySuggestions.length).toEqual(0);
+
+    const suggester = new PhraseTranslationSuggester(0.2);
+    const suggestions = suggester.getSuggestions(1, 7, true, results);
+    expect(suggestions.length).toEqual(0); // <-- This one fails
   });
 });
